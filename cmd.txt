@@ -1,0 +1,31 @@
+TERMINAL
+$ sudo apt install golang
+
+package main (Namespace)
+import "fmt" (use library FORMAT = fmt)
+
+==================================
+1. Запускать проект
+$ go run project.go
+
+2. Смотреть документацию об функции
+install package :
+sudo apt install golang-golang-x-tools
+
+$ godoc fmt Println
+$ go doc fmt.Printf"
+
+3. Объявление переменные
+var age = 12
+var age int = 12 (int мы указываем что переменные типа integer
+var num = 2.3456 OR var num float32 = 2.3456 (float с размером)
+var str = "Hello world"
+
+fmt.Println(age, num)
+
+4. В "GoLang" если объявляешь переменную надо обязательно где-то использовать !!!
+а то будет вывести ошибки на экран
+go run project.go
+# command-line-arguments
+./project.go:13:8: str declared and not used
+
