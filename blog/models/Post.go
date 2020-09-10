@@ -13,5 +13,5 @@ type Post struct {
 
 // Constructor
 func NewPost(id, title, content string) *Post{
-    return &Post(id, title, content)
+    return &Post{id, title, content}
 }

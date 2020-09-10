@@ -5,7 +5,7 @@ import (
    "fmt" // для вывода
    "html/template" // работа с шаблоном
    "net/http" // работа с http
-   "github.com/gavruk/go-blog-example/models"
+   "models/models"
 )
 
 
@@ -31,7 +31,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
     // Выполняем наш template ( как render() в php )
     // index - это название нашего вида для этого указали {{ define "index" }}
-    t.ExecuteTemplate(w, "index", nil)
+    // t.ExecuteTemplate(w, "index", nil)
+    t.ExecuteTemplate(w, "index", posts) // posts [ текущий контекст ]
 }
 
 
@@ -67,8 +68,13 @@ func savePostHandler(w http.ResponseWriter, r *http.Request) {
     title := r.FormValue("title")
     content := r.FormValue("content")
 
-    // create a new post model
+    // create a new post model from "Form"
+    // Создание нашего поста из формы
     post := models.NewPost(id, title, content)
+
+    // Запишем наш пост в мап(map) постов
+    posts[post.Id] = post
+
 
     // redirect permanently
     http.Redirect(w, r, "/", 302)
@@ -83,7 +89,6 @@ func main() {
 
    // объявим наши посты (posts)
    posts = make(map[string]*models.Post, 0) // нуль элементов
-   posts[post.Id] = post
 
 
    // Подключение стили и скрипты resources
