@@ -64,7 +64,8 @@ func savePostHandler(w http.ResponseWriter, r *http.Request) {
 
     // r - Request
     // получаем данные из формы
-    id := r.FormValue("id")
+    // id := r.FormValue("id")
+    id := GenerateId() // method from utils.go
     title := r.FormValue("title")
     content := r.FormValue("content")
 
