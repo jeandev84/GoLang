@@ -1,0 +1,28 @@
+{{ define "write" }}
+
+{{ template "header" }}
+
+<div class="row">
+    <div class="col-xs-4">
+        <form role="form" method="POST" action="/SavePost">
+            <input type="hidden" name="id" value="title"/>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" class="form-control" id="title" name="title" value=""/>
+            </div>
+            <div class="form-group">
+                <label>Content</label>
+                <textarea id="content" name="content"></textarea>
+            </div>
+            <button type="submit" class="btn btn-default">Submit</button>
+        </form>
+    </div>
+    <div class="col-xs-6" id="md_html">
+        <a href="/DeletePost">Delete</a>
+    </div>
+</div>
+
+{{ template "footer" }}
+
+{{ end }}
+<!--<script type="text/javascript" src="/assets/js/write.js"></script>-->

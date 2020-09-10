@@ -1,0 +1,11 @@
+BUILD
+
+собрать
+$ go build
+
+запускать проект
+$ ./blog
+
+
+объявить названия template "index"
+{{ define "index" }}
