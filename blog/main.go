@@ -70,7 +70,7 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
     // прочитать id из URL
     id := r.FormValue("id")
 
-    // ищем пост
+    // ищем пост (может возвращать post или статус что не нашел)
     post, found := posts[id]
 
     // если не нашел пост то мы сделаем редирект страница не найдена
@@ -78,13 +78,29 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
        http.NotFound(w, r)
     }
 
-
-
     // Выполняем наш template ( как render() в php )
     // а если нашел "post" мы передаем в template
     t.ExecuteTemplate(w, "write", post)
 }
 
+
+
+// Удаление поста
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+
+    // прочитать id из URL
+    id := r.FormValue("id")
+
+    if id == "" {
+       http.NotFound(w, r)
+    }
+
+    // удаление из постов
+    delete(posts, id)
+
+    // редирект на главную страницу
+    http.Redirect(w, r, "/", 302)
+}
 
 
 // Cохранение поста
@@ -97,20 +113,39 @@ func savePostHandler(w http.ResponseWriter, r *http.Request) {
       _ := r.FormValue("content")
     */
 
-    // r - Request
-    // получаем данные из формы
-    // id := r.FormValue("id")
-    id := GenerateId() // method from utils.go
+    /*
+    id := GenerateId()
     title := r.FormValue("title")
     content := r.FormValue("content")
 
-    // create a new post model from "Form"
-    // Создание нашего поста из формы
     post := models.NewPost(id, title, content)
 
     // Запишем наш пост в мап(map) постов
     posts[post.Id] = post
 
+
+    // Редирект ( redirect permanently )
+    http.Redirect(w, r, "/", 302)
+    */
+
+    // Получаем данные из формы
+    id := r.FormValue("id")
+    title := r.FormValue("title")
+    content := r.FormValue("content")
+
+    // обявляем post
+    var post *models.Post
+
+    // если id не пустой, значить мы редактируем
+    if id != "" {
+       post = posts[id]
+       post.Title = title
+       post.Content = content
+    } else {
+       id  = GenerateId() // сгенируем новый id
+       post := models.NewPost(id, title, content)
+       posts[post.Id] = post
+    }
 
     // redirect permanently
     http.Redirect(w, r, "/", 302)
@@ -160,8 +195,9 @@ func main() {
 
    http.HandleFunc("/", indexHandler)
    http.HandleFunc("/write", writeHandler)
-   http.HandleFunc("/edit", writeHandler)
-   http.HandleFunc("/SavePost", savePostHandler)
+   http.HandleFunc("/edit", editHandler)
+   http.HandleFunc("/delete", deleteHandler)
+   http.HandleFunc("/save", savePostHandler)
 
    // Слушаем в порте 3000
    http.ListenAndServe(":3000", nil)
