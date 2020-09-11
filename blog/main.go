@@ -5,15 +5,16 @@ import (
    "fmt" // для вывода
    "html/template" // работа с шаблоном
    "net/http" // работа с http
-   "models/models"
+   "models/models" // modules
+   "crypto/rand" // random
 )
 
 
-// хранить наши посты в памяти
+// Хранить наши посты в памяти
 var posts map[string]*models.Post
 
 
-// Route Handler
+// Вывести список постов
 func indexHandler(w http.ResponseWriter, r *http.Request) {
     /* fmt.Fprintf(w, "<h1>Hello world</h1>") */
 
@@ -36,6 +37,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// Добавление поста
 func writeHandler(w http.ResponseWriter, r *http.Request) {
     /* fmt.Fprintf(w, "<h1>Hello world</h1>") */
 
@@ -53,6 +55,39 @@ func writeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// Редактирование поста
+func editHandler(w http.ResponseWriter, r *http.Request) {
+    /* fmt.Fprintf(w, "<h1>Hello world</h1>") */
+
+    // ParseFiles возвращает наш template и ошибку
+    t, err := template.ParseFiles("templates/write.html", "templates/header.html", "templates/footer.html")
+
+    // Выводим ошибку если она есть (nil ?)
+    if err != nil {
+        fmt.Fprintf(w, err.Error())
+    }
+
+    // прочитать id из URL
+    id := r.FormValue("id")
+
+    // ищем пост
+    post, found := posts[id]
+
+    // если не нашел пост то мы сделаем редирект страница не найдена
+    if !found {
+       http.NotFound(w, r)
+    }
+
+
+
+    // Выполняем наш template ( как render() в php )
+    // а если нашел "post" мы передаем в template
+    t.ExecuteTemplate(w, "write", post)
+}
+
+
+
+// Cохранение поста
 func savePostHandler(w http.ResponseWriter, r *http.Request) {
 
     /*
@@ -82,6 +117,23 @@ func savePostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+//------------- Helpers ---------------//
+// Метод для генерации массив bytes
+func GenerateId() string {
+
+   // сгенируем наш random числа 16 bytes
+   b := make([]byte, 16)
+
+   // считаем наш random
+   rand.Read(b)
+
+   // выводим
+   return fmt.Sprintf("%x", b)
+}
+
+//----------- End Helpers --------------//
+
+
 // Entry Point of application
 func main() {
 
@@ -108,6 +160,7 @@ func main() {
 
    http.HandleFunc("/", indexHandler)
    http.HandleFunc("/write", writeHandler)
+   http.HandleFunc("/edit", writeHandler)
    http.HandleFunc("/SavePost", savePostHandler)
 
    // Слушаем в порте 3000
