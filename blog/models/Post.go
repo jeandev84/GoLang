@@ -7,11 +7,12 @@ type Post struct {
    // Properties
    Id string
    Title string
-   Content string
+   ContentHtml string
+   ContentMarkdown string
 }
 
 
 // Constructor
-func NewPost(id, title, content string) *Post{
-    return &Post{id, title, content}
+func NewPost(id, title, contentHtml, contentMarkdown string) *Post{
+    return &Post{id, title, contentHtml, contentMarkdown}
 }

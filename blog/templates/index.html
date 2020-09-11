@@ -1,9 +1,3 @@
-<!-- объявим названия вида -->
-{{ define "index" }}
-
-<!-- подключаем нашу шапку с ключевом словом "template" -->
-{{ template "header" }}
-
 <!-- range - это как for в twig или foreach() -->
 {{ range $key, $value := . }}
 <div class="row">
@@ -12,24 +6,18 @@
     <div class="col-xs-8">
         <h1>
             <!-- на месте $key можно писать $value.Id -->
-            <a href="/edit?id={{$key}}">{{ $value.Title }}</a>
+            <a href="/edit/{{$key}}">{{ $value.Title }}</a>
         </h1>
     </div>
-    <div class="col-xs-2">
-    </div>
+    <div class="col-xs-2"></div>
 </div>
 <div class="row">
     <div class="col-xs-2">
     </div>
     <div class="col-xs-8">
-       {{ $value.Content }}
+       {{ $value.ContentHtml | unescape }}
     </div>
     <div class="col-xs-2">
     </div>
 </div>
-{{ end }}
-
-<!-- подключаем наш подвал -->
-{{ template "footer" }}
-
 {{ end }}

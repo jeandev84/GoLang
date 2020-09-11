@@ -3,135 +3,69 @@ package main
 
 import (
    "fmt" // для вывода
-   "html/template" // работа с шаблоном
    "net/http" // работа с http
+   "html/template"
    "models/models" // modules
+   "github.com/codegangsta/martini" // framework
+   "github.com/martini-contrib/render" // middleware martini
+   //"github.com/russross/blackfriday" // Convert markdown
+   "github.com/gomarkdown/markdown" // go-markdown
+   //"github.com/gomarkdown/markdown/parser"
+   "github.com/gomarkdown/markdown/html"
    "crypto/rand" // random
 )
 
 
-// Хранить наши посты в памяти
+/* Обявление константы */
 var posts map[string]*models.Post
+var counter int
 
 
-// Вывести список постов
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-    /* fmt.Fprintf(w, "<h1>Hello world</h1>") */
+//----------- Функция Handlers -------//
+func indexHandler(rnd render.Render) {
 
-    // ParseFiles возвращает наш template и ошибку
-    t, err := template.ParseFiles("templates/index.html", "templates/header.html", "templates/footer.html")
+    fmt.Println(counter)
 
-    // Выводим ошибку если она есть (nil ?)
-    if err != nil {
-        fmt.Fprintf(w, err.Error())
-    }
-
-
-    // Вывести наши посты
-    fmt.Println(posts)
-
-    // Выполняем наш template ( как render() в php )
-    // index - это название нашего вида для этого указали {{ define "index" }}
-    // t.ExecuteTemplate(w, "index", nil)
-    t.ExecuteTemplate(w, "index", posts) // posts [ текущий контекст ]
+    // render
+    rnd.HTML(200, "index", posts)
 }
 
 
-// Добавление поста
-func writeHandler(w http.ResponseWriter, r *http.Request) {
-    /* fmt.Fprintf(w, "<h1>Hello world</h1>") */
+func writeHandler(rnd render.Render) {
 
-    // ParseFiles возвращает наш template и ошибку
-    t, err := template.ParseFiles("templates/write.html", "templates/header.html", "templates/footer.html")
-
-    // Выводим ошибку если она есть (nil ?)
-    if err != nil {
-        fmt.Fprintf(w, err.Error())
-    }
-
-    // Выполняем наш template ( как render() в php )
-    // write - это название нашего вида для этого указали {{ define "write" }}
-    t.ExecuteTemplate(w, "write", nil)
+   // render
+   rnd.HTML(200, "write", nil)
 }
 
 
-// Редактирование поста
-func editHandler(w http.ResponseWriter, r *http.Request) {
-    /* fmt.Fprintf(w, "<h1>Hello world</h1>") */
+func editHandler(rnd render.Render, r *http.Request, params martini.Params) {
 
-    // ParseFiles возвращает наш template и ошибку
-    t, err := template.ParseFiles("templates/write.html", "templates/header.html", "templates/footer.html")
-
-    // Выводим ошибку если она есть (nil ?)
-    if err != nil {
-        fmt.Fprintf(w, err.Error())
-    }
-
-    // прочитать id из URL
-    id := r.FormValue("id")
+    // читаем id из URL
+    // id := r.FormValue("id")
+    id := params["id"] // получить параметра id
 
     // ищем пост (может возвращать post или статус что не нашел)
     post, found := posts[id]
 
     // если не нашел пост то мы сделаем редирект страница не найдена
     if !found {
-       http.NotFound(w, r)
+       rnd.Redirect("/") // redirect на главную
+       return
     }
 
-    // Выполняем наш template ( как render() в php )
-    // а если нашел "post" мы передаем в template
-    t.ExecuteTemplate(w, "write", post)
+    rnd.HTML(200, "write", post)
 }
 
 
-
-// Удаление поста
-func deleteHandler(w http.ResponseWriter, r *http.Request) {
-
-    // прочитать id из URL
-    id := r.FormValue("id")
-
-    if id == "" {
-       http.NotFound(w, r)
-    }
-
-    // удаление из постов
-    delete(posts, id)
-
-    // редирект на главную страницу
-    http.Redirect(w, r, "/", 302)
-}
-
-
-// Cохранение поста
-func savePostHandler(w http.ResponseWriter, r *http.Request) {
-
-    /*
-      если мы не хотим объявлять переменную тогда пишем нижнее почеркивание _
-      _ := r.FormValue("id")
-      _ := r.FormValue("title")
-      _ := r.FormValue("content")
-    */
-
-    /*
-    id := GenerateId()
-    title := r.FormValue("title")
-    content := r.FormValue("content")
-
-    post := models.NewPost(id, title, content)
-
-    // Запишем наш пост в мап(map) постов
-    posts[post.Id] = post
-
-
-    // Редирект ( redirect permanently )
-    http.Redirect(w, r, "/", 302)
-    */
+func savePostHandler(rnd render.Render, r *http.Request) {
 
     // Получаем данные из формы
     id := r.FormValue("id")
     title := r.FormValue("title")
-    content := r.FormValue("content")
+    contentMarkdown := r.FormValue("content")
+    // contentHtml := string(blackfriday.MarkdownBasic([]byte(contentMarkdown)))
+    contentHtml := ""
+
 
     // обявляем post
     var post *models.Post
@@ -140,19 +74,65 @@ func savePostHandler(w http.ResponseWriter, r *http.Request) {
     if id != "" {
        post = posts[id]
        post.Title = title
-       post.Content = content
+       post.ContentHtml = contentHtml
+       post.ContentMarkdown = contentMarkdown
     } else {
        id  = GenerateId() // сгенируем новый id
-       post := models.NewPost(id, title, content)
+       post := models.NewPost(id, title, contentHtml, contentMarkdown)
        posts[post.Id] = post
     }
 
-    // redirect permanently
-    http.Redirect(w, r, "/", 302)
+    rnd.Redirect("/")
 }
 
 
-//------------- Helpers ---------------//
+func deleteHandler(rnd render.Render, r *http.Request, params martini.Params) {
+
+    // прочитать id из URL
+    id := params["id"]
+
+    if id == "" {
+       rnd.Redirect("/")
+       return
+    }
+
+    // удаление из постов
+    delete(posts, id)
+
+    // редирект на главную страницу
+    rnd.Redirect("/")
+}
+
+
+
+// handler via request ajax
+func getHtmlHandler(rnd render.Render, r *http.Request) {
+
+   htmlFlags := html.CommonFlags | html.HrefTargetBlank
+   opts := html.RendererOptions{Flags: htmlFlags}
+   renderer := html.NewRenderer(opts)
+
+   // Получаем наш markdown
+   md_form := r.FormValue("md")
+
+   // Возвращает массив байтов
+   // htmlBytes := blackfriday.MarkdownBasic([]byte(md))
+   md := []byte(md_form)
+   htmlBytes := markdown.ToHTML(md, nil, renderer)
+
+
+   // Возвращает массив байтов
+   // htmlBytes := blackfriday.MarkdownBasic([]byte(md))
+
+
+   // Отдаем в JSON Format
+   rnd.JSON(200, map[string]interface{} {"html": string(htmlBytes)})
+}
+
+
+
+
+//------------- Начало Helpers ---------------//
 // Метод для генерации массив bytes
 func GenerateId() string {
 
@@ -166,7 +146,15 @@ func GenerateId() string {
    return fmt.Sprintf("%x", b)
 }
 
-//----------- End Helpers --------------//
+
+func unescape(x string) interface{} {
+    return template.HTML(x)
+}
+
+
+//----------- Конец Helpers --------------//
+
+
 
 
 // Entry Point of application
@@ -175,30 +163,62 @@ func main() {
    // Выводим в консоле что мы слушаем в порте 3000
    fmt.Println("Listening on port :3000")
 
+
    // объявим наши посты (posts)
    posts = make(map[string]*models.Post, 0) // нуль элементов
+   counter = 0
+
+   // Исползуем фреймворк "martini"
+   m := martini.Classic()
+
+   unescapeFuncMap := template.FuncMap{"unescape": unescape}
 
 
-   // Подключение стили и скрипты resources
-   // http://example.com/assets/css/app.css
-   // убрезаем папку assets с помощью http.StripPrefix(), и мы ищем в папке "assets"
-   // мы имем стили в папке "assets"  /css/app.css
-   http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
+   // Middleware ( https://github.com/martini-contrib/render )
+   // Он позволяет работать с template (html) и json
+   // m.Use - это как наше контейнер (Container Dependency Injection)
+   m.Use(render.Renderer(render.Options{
+     Directory: "templates", // Specify what path to load the templates from.
+     Layout: "layout", // Specify a layout template. Layouts can call {{ yield }} to render the current template.
+     Extensions: []string{".tmpl", ".html"}, // Specify extensions to load for templates.
+     Funcs: []template.FuncMap{unescapeFuncMap}, // Specify helper function maps for templates to access.
+     //Delims: render.Delims{"{[{", "}]}"}, // Sets delimiters to the specified strings.
+     Charset: "UTF-8", // Sets encoding for json and html content-types. Default is "UTF-8".
+     IndentJSON: true, // Output human readable JSON
+     //IndentXML: true, // Output human readable XML
+     //HTMLContentType: "application/xhtml+xml", // Output XHTML content type instead of default "text/html"
+   }))
 
 
-   // Регистрируем наши маршруты
+
+   // Увеличиваем counter для теста
    /*
-   http.HandleFunc("/", func (w http.ResponseWriter, r *http.Request) {
-       fmt.Fprintf(w, "<h1>Hello world</h1>")
+   m.Use(func(r *http.Request) {
+       if r.URL.Path == "/write" {
+          counter++
+       }
    })
    */
 
-   http.HandleFunc("/", indexHandler)
-   http.HandleFunc("/write", writeHandler)
-   http.HandleFunc("/edit", editHandler)
-   http.HandleFunc("/delete", deleteHandler)
-   http.HandleFunc("/save", savePostHandler)
+   // Подключение обычные статичные файлы (m.Use(martini.Static("assets", ...)) без опций)
+   staticOptions := martini.StaticOptions{Prefix:"assets"}
+   m.Use(martini.Static("assets", staticOptions))
 
-   // Слушаем в порте 3000
-   http.ListenAndServe(":3000", nil)
+   // Регистрируем наши маршруты
+   m.Get("/", indexHandler)
+   m.Get("/write", writeHandler)
+   m.Get("/edit/:id", editHandler)
+   m.Get("/delete/:id", deleteHandler)
+   m.Post("/save", savePostHandler)
+   m.Post("/gethtml", getHtmlHandler)
+
+   /*
+   m.Get("/test", func() string {
+       return "test"
+   })
+   */
+
+
+   // Запускаем приложение в порте :3000
+   m.Run()
 }
